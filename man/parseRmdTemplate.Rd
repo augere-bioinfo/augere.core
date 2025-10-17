@@ -25,6 +25,9 @@ Tag pairs should follow these rules:
 \item The \code{:BEGIN} tag should be followed by a name, e.g., \code{:BEGIN my-name-here}.
 \item The corresponding \code{:END} tag does not need to be followed by a name, but if it does, the name should be the same as that of the matching \code{:BEGIN} tag.
 \item Tag pairs may be nested within another tag pair.
+\item Names should be unique for any given level of nesting.
+For nested tag pairs, there should be no other tag pair with the same name within the parent tag pair.
+For unnested tag pairs, there should be no other unnested tag pair with the same name. 
 }
 
 In the output of this function, each entry of the top-level list may be either:
