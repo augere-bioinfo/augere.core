@@ -1,0 +1,18 @@
+Package: augere.core
+Version: 0.99.0
+Date: 2025-10-16
+Title: Core Utilities for Automatically Generated Reports
+Description:
+    Provides utility functions for automatic generation of reports in the augere framework.
+    This mostly involves parsing and dynamically editing Rmarkdown files,
+    controlling inputs into the augere pipelines.
+Authors@R: person("Aaron", "Lun", role=c("cre", "aut"), email="infinite.monkeys.with.keyboards@gmail.com")
+License: MIT + file LICENSE
+Imports: utils
+Suggests:
+    testthat,
+    knitr,
+    rmarkdown
+VignetteBuilder: knitr    
+RoxygenNote: 7.3.3
+Encoding: UTF-8
