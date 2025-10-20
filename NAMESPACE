@@ -2,5 +2,6 @@
 
 export(deparseToString)
 export(evaluateChunks)
+export(extractChunks)
 export(parseRmdTemplate)
 export(replacePlaceholders)
