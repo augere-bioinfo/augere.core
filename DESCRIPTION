@@ -8,7 +8,9 @@ Description:
     controlling inputs into the augere pipelines.
 Authors@R: person("Aaron", "Lun", role=c("cre", "aut"), email="infinite.monkeys.with.keyboards@gmail.com")
 License: MIT + file LICENSE
-Imports: utils
+Imports:
+    utils,
+    grDevices
 Suggests:
     testthat,
     knitr,
