@@ -1,0 +1,198 @@
+---
+title: Automatic generation of analysis reports
+author:
+- name: Aaron Lun
+  email: infinite.monkeys.with.keyboards@gmail.com
+date: "Revised: November 9, 2025"
+output: BiocStyle::html_document
+package: augere.core
+vignette: >
+  %\VignetteIndexEntry{Creating analysis pipelines}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, echo=FALSE, results="hide"}
+knitr::opts_chunk$set(error=FALSE, message=FALSE, warning=FALSE, comment = "")
+library(BiocStyle)
+self <- Biocpkg("augere.core")
+```
+
+# Introduction
+
+`r self` provides utilities to implement pipelines for automatic generation of analysis reports.
+Each pipeline function performs a standard bioinformatics analysis while generating a fully-parametrized Rmarkdown report that contains all of the relevant commands.
+The generated report documents the analysis for greater transparency and reproducibility, and can be easily modified to fine-tune the analysis with custom steps or parameters.
+This vignette aims to provide some guidance on how to write such pipeline functions.
+
+# Quick start
+
+An **augere** pipeline is typically comprised of an Rmarkdown template that describes most of the analysis,
+and a user-visible function that realizes the template into a fully-parametrized report. 
+To demonstrate, we'll consider a simple differential expression (DE) analysis based on the following template:
+
+```{r, echo=FALSE, comment=""}
+template <- "# Data loading
+
+---{r}
+:BEGIN data
+:END
+---
+
+# Preprocessing
+
+---{r}
+y <- SummarizedExperiment::assay(se)
+d <- edgeR::DGEList(y)
+d <- d[edgeR::filterByExpr(d),]
+d <- edgeR::normLibSizes(d)
+d$samples
+---
+
+# Variance modelling
+
+---{r}
+design <- model.matrix(<%= FORMULA %>, colData(se))
+v <- limma::voom(d, design, plot=TRUE)
+fit <- limma::lmFit(v, design)
+fit <- limma::eBayes(fit, robust=<%= ROBUST %>)
+---
+
+# Testing for differences
+
+---{r}
+res <- limma::topTable(fit, n=Inf)
+---
+
+Saving the result:
+
+---{r saveme}
+write.csv(res, 'de.csv')
+---"
+template <- gsub("---", "```", template)
+cat(template)
+```
+
+Our pipeline function fills in the placeholder expressions (`<%= .. %>`) and tags (`:BEGIN`, `:END`) in the template. 
+Some work is required to manage the input data and output results, which is explained in more detail below.
+
+```{r}
+library(augere.core)
+demo.pipeline <- function(
+    x,
+    formula,
+    output.dir='.',
+    robust=TRUE,
+    dry.run=FALSE,
+    save.results=TRUE
+) {
+    restore.cache <- resetInputCache()
+    on.exit(restore.cache(), add=TRUE, after=FALSE)
+
+    report.text <- parseRmdTemplate(template)
+    report.text[["data"]] <- processInputCommands(x, "se")
+    report.text <- replacePlaceholders(
+        report.text,
+        c(
+            FORMULA=paste(as.character(formula), collapse=""),
+            ROBUST=deparseToString(robust)
+        )
+    )
+
+    dir.create(output.dir, showWarnings=FALSE, recursive=TRUE)
+    fname <- file.path(output.dir, "report.Rmd")
+    writeRmd(report.text, fname)
+    if (dry.run) {
+        return(invisible(NULL))
+    }
+
+    env <- new.env()
+    to.skip <- NULL
+    if (!save.results) {
+        to.skip <- "saveme"
+    }
+    compileReport(fname, env, skip.chunks=to.skip)
+    env$res
+}
+```
+
+For users, executing the pipeline is as simple as:
+
+```{r, fig.show="hide"}
+library(airway)
+data(airway)
+output.dir <- tempfile()
+res <- demo.pipeline(airway, formula=~dex, output.dir=output.dir)
+head(res)
+```
+
+This produces an Rmarkdown report with all the details filled out:
+
+```{r} 
+# Looking at the top few lines of the report.
+fname <- file.path(output.dir, "report.Rmd")
+contents <- readLines(fname)
+cat(head(contents, 30), sep="\n")
+```
+
+# Writing the template 
+
+The Rmarkdown template should contain most all of the analysis steps,
+such that it can be realized into an reproducible analysis report with just a few modifications.
+We use two syntax markers to indicate where/how the report can be modified:
+
+- The `<%= ... %>` notation represents a placeholder to be substituted by the `replacePlaceholders()` function.
+- Text between `:BEGIN` and `:END` blocks represent named blocks that are extracted by the `parseRmdTemplate()` function.
+  These blocks can be deleted, used as insertion points for more content, duplicated, etc.
+
+These two markers can be inserted into an existing Rmarkdown report to turn it into a template,
+e.g., by replacing hard-coding parameters with `<%= ... %>` placeholders that will be filled in by the pipeline function.
+
+Given a template, the `parseRmdTemplate()` function will load in the template as a nested list.
+This can be modified with `replacePlaceholders()` or by list operations to add/delete blocks.
+Once all modifications are complete, the `writeRmd()` function will write the report to disk.
+We suggest writing the report to a location inside a user-supplied output directory, so that the compiled HTML and results do not interfere with those of other analyses.
+
+We typically use `::` rather than `library()` in the various code chunks.
+The former avoids the unpredictability of traversing the search path in the user's R session, which might end up finding an irrelevant function with the same name.
+Similarly, it also does not attach more namespaces to the user's session, which would otherwise be an unexpected side-effect of running the pipeline.
+
+# Representing data inputs
+
+Each pipeline function typically has one or more arguments that represent the input data.
+The `processInputCommands()` function creates R commands to define these data inputs,
+which should be inserted into the Rmarkdown report for documentation and reproducibility.
+
+- When an ordinary R object is passed to `processInputCommands()`, the latter will just create a `stop()` statement.
+  This reminds the user to supply the code used to create that object before reproducing the analysis from the Rmarkdown report.
+  We do not attempt to deparse these objects as they might be arbitrarily large.
+- Alternatively, the user of the pipeline function can use `wrapInput()` to define how each input object was created.
+  The user-provided commands will be returned verbatim by `processInputCommands()`.
+  This can be helpful if the user does not want to modify the report afterwards to document the data generation.
+
+Regardless of the input object, `processInputCommands()` will cache the supplied object for use in `compileReport()`.
+When `compileReport()` encounters the code generated by `processInputCommands()`, it will use the cached object rather than re-running the commands.
+This saves some time and ensures that the compilation can proceed even if `processInputCommands()` returned a `stop()`.
+Each pipeline function should call `resetInputCache()` to protect against interference from other calls to the same or different pipeline.
+
+Pipelines may also take any number of non-data arguments to define the parameters of the analysis.
+These values can be of any type so long as they can be deparsed (typically with `deparseToString()`) and embedded in the report directly.
+
+# Computing results
+
+The `compileReport()` function will compile the report (duh) within a self-contained environment.
+Specifically, it executes the Rmarkdown code and populates an environment containing all of the generated variables.
+The relevant results can then be extracted from this environment and returned to the user.
+
+It is also helpful to provide an option to save the results to file.
+The exact format is left to the developer, but for more complex Bioconductor objects, we suggest using the `r Biocpkg("alabaster.base")` framework.
+We can also skip the relevant code chunk if we are only interested in looking at the results in memory.
+
+A dry-run of the pipeline function would just create the Rmarkdown report without actually running it.
+This can be useful in some cases, e.g., if the user knows that some modifications are required.
+
+# Session information {-}
+
+```{r}
+sessionInfo()
+```

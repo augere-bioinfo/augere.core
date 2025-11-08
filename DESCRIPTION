@@ -14,7 +14,12 @@ Imports:
 Suggests:
     testthat,
     knitr,
-    rmarkdown
+    rmarkdown,
+    BiocStyle,
+    limma,
+    edgeR,
+    airway,
+    SummarizedExperiment
 VignetteBuilder: knitr    
 RoxygenNote: 7.3.3
 Encoding: UTF-8
