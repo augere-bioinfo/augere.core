@@ -44,7 +44,7 @@
 #' list.files(dirname(path))
 #'
 #' @export
-#' @importFrom grDevices pdf dev.off
+#' @importFrom grDevices pdf dev.off dev.list
 compileReport <- function(file, env, skip.chunks=NULL) {
     lines <- readLines(file)
     chunks <- extractChunks(lines)
