@@ -55,5 +55,8 @@ test_that("replacePlaceholders works for input lists", {
 test_that("replacePlaceholder fails if it can't find the placeholder", {
     expect_error(replacePlaceholders("<%= YAY %>", character()), "no available replacements")
     expect_error(replacePlaceholders("<%= YAY %>", list()), "no available replacements")
-})
 
+    expect_error(replacePlaceholders("<%= FOO %> <%=YAY%> <%= BAR %>", list()), "no available replacements")
+    partial <- replacePlaceholders("<%= FOO %> <%=YAY%> <%= STUFF %> <%= BAR %>", list(FOO=1, BAR=2), error=FALSE)
+    expect_identical(partial, "1 <%=YAY%> <%= STUFF %> 2")
+})

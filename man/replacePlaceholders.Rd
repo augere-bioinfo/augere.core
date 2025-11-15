@@ -4,7 +4,7 @@
 \alias{replacePlaceholders}
 \title{Substitute placeholders}
 \usage{
-replacePlaceholders(contents, replacements)
+replacePlaceholders(contents, replacements, error = TRUE)
 }
 \arguments{
 \item{contents}{String, character vector or list containing an Rmarkdown report template.
@@ -13,6 +13,9 @@ This is typically the output of \code{\link{parseRmdTemplate}}.}
 \item{replacements}{Named character vector of replacement text for placeholders.
 The name is the placeholder and the value is the replacement text.
 This may also be a named list of strings.}
+
+\item{error}{Boolean indicating whether to throw an error if a placeholder does not have a replacement in \code{replacements}.
+If \code{FALSE}, no error is thrown.}
 }
 \value{
 An object of the same type as \code{contents}, but with all of the placeholders replaced.

@@ -7,6 +7,8 @@
 #' @param replacements Named character vector of replacement text for placeholders.
 #' The name is the placeholder and the value is the replacement text.
 #' This may also be a named list of strings.
+#' @param error Boolean indicating whether to throw an error if a placeholder does not have a replacement in \code{replacements}.
+#' If \code{FALSE}, no error is thrown.
 #'
 #' @return An object of the same type as \code{contents}, but with all of the placeholders replaced.
 #'
@@ -22,20 +24,20 @@
 #' )
 #' 
 #' @export
-replacePlaceholders <- function(contents, replacements) {
+replacePlaceholders <- function(contents, replacements, error = TRUE) {
     if (is.list(replacements)) {
         replacements <- unlist(replacements)
         if (is.null(replacements)) {
             replacements <- character(0)
         }
     }
-    .replace_contents(contents, replacements)
+    .replace_contents(contents, replacements, error=error)
 }
 
-.replace_contents <- function(contents, replacements) {
+.replace_contents <- function(contents, replacements, error) {
     if (!is.character(contents)) {
         for (i in seq_along(contents)) {
-            contents[[i]] <- .replace_contents(contents[[i]], replacements)
+            contents[[i]] <- .replace_contents(contents[[i]], replacements, error=error)
         }
         return(contents)
     }
@@ -50,13 +52,18 @@ replacePlaceholders <- function(contents, replacements) {
         ends <- starts + attr(starts, "match.length") - 1L
 
         curline <- contents[i]
-        instances <- substring(curline, starts + 3L, ends - 2L)
-        instances <- trimws(instances) 
+        instances.0 <- substring(curline, starts + 3L, ends - 2L)
+        instances <- trimws(instances.0) 
 
         substitutes <- replacements[instances]
         if (anyNA(substitutes)) {
-            lost <- unique(instances[is.na(substitutes)])
-            stop("no available replacements for ", paste(sprintf("'%s'", lost), collapse=", "))
+            no.sub <- is.na(substitutes)
+            if (error) {
+                lost <- unique(instances[no.sub])
+                stop("no available replacements for ", paste(sprintf("'%s'", lost), collapse=", "))
+            } else {
+                substitutes[no.sub] <- sprintf("<%%=%s%%>", instances.0[no.sub])
+            }
         }
 
         rest.starts <- c(1L, ends + 1L)
