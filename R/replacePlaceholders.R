@@ -6,6 +6,7 @@
 #' This is typically the output of \code{\link{parseRmdTemplate}}.
 #' @param replacements Named character vector of replacement text for placeholders.
 #' The name is the placeholder and the value is the replacement text.
+#' This may also be a named list of strings.
 #'
 #' @return An object of the same type as \code{contents}, but with all of the placeholders replaced.
 #'
@@ -22,6 +23,12 @@
 #' 
 #' @export
 replacePlaceholders <- function(contents, replacements) {
+    if (is.list(replacements)) {
+        replacements <- unlist(replacements)
+        if (is.null(replacements)) {
+            replacements <- character(0)
+        }
+    }
     .replace_contents(contents, replacements)
 }
 

@@ -23,6 +23,10 @@ test_that("replacePlaceholders works for character vectors", {
     # Properly respects backslashes.
     test <- replacePlaceholders("insert <%= back_slashed %> here", c(back_slashed="\\t"))
     expect_identical(test, "insert \\t here")
+
+    # Works if replacements is a list.
+    test <- replacePlaceholders("<%=hello %> super foobar <%=super%> whee <%= foo-bar %>", list(hello="hi", super="X", `foo-bar`="Y"))
+    expect_identical(test, "hi super foobar X whee Y")
 })
 
 test_that("replacePlaceholders works for input lists", {
@@ -50,5 +54,6 @@ test_that("replacePlaceholders works for input lists", {
 
 test_that("replacePlaceholder fails if it can't find the placeholder", {
     expect_error(replacePlaceholders("<%= YAY %>", character()), "no available replacements")
+    expect_error(replacePlaceholders("<%= YAY %>", list()), "no available replacements")
 })
 

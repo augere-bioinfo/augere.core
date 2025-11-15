@@ -11,7 +11,8 @@ replacePlaceholders(contents, replacements)
 This is typically the output of \code{\link{parseRmdTemplate}}.}
 
 \item{replacements}{Named character vector of replacement text for placeholders.
-The name is the placeholder and the value is the replacement text.}
+The name is the placeholder and the value is the replacement text.
+This may also be a named list of strings.}
 }
 \value{
 An object of the same type as \code{contents}, but with all of the placeholders replaced.
