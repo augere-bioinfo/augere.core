@@ -23,6 +23,30 @@ write.csv(res, file='blah.csv', row.names=FALSE)
     expect_identical(getwd(), original.wd)
 })
 
+test_that("compileReport works the same when the contents are supplied without the report", {
+    original.wd <- getwd()
+    tmp <- tempfile()
+    dir.create(tmp)
+    rmd.path <- file.path(tmp, "test.Rmd") # this doesn't exist.
+
+    contents <- list(
+        "```{r}",
+        list(
+            "res <- data.frame(foo=1:5, bar=LETTERS[1:5])",
+            "write.csv(res, file='blah.csv', row.names=FALSE)"
+        ),
+        "```"
+    )
+
+    env <- new.env()
+    compileReport(rmd.path, env=env, contents=contents)
+    expect_true(is.data.frame(env$res))
+    expect_true(file.exists(file.path(tmp, "blah.csv")))
+
+    # Original working directory is restored.
+    expect_identical(getwd(), original.wd)
+})
+
 test_that("compileReport skips chunks", {
     tmp <- tempfile()
     dir.create(tmp)

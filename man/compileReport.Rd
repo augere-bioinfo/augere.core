@@ -4,7 +4,7 @@
 \alias{compileReport}
 \title{Compile an Rmarkdown report}
 \usage{
-compileReport(file, env, skip.chunks = NULL)
+compileReport(file, env, skip.chunks = NULL, contents = NULL)
 }
 \arguments{
 \item{file}{String containing a path to an Rmarkdown file.}
@@ -12,6 +12,9 @@ compileReport(file, env, skip.chunks = NULL)
 \item{env}{Environment in which the R code is to be evaluated.}
 
 \item{skip.chunks}{Character vector of the names of Rmarkdown chunks to skip.}
+
+\item{contents}{List or character vector containing the contents of \code{file}.
+Note that \code{file} must still be supplied, see Details.}
 }
 \value{
 Code chunks from \code{file} are compiled, typically populating \code{env} with new variables.
@@ -31,6 +34,7 @@ This prevents a flash of multiple images on the default graphics device during p
 
 \code{compileReport} automatically changes the working directory to that of \code{file}.
 This is consistent with the behavior of \pkg{knitr} and ensures that any relative paths in \code{file} are respected.
+If \code{contents} is supplied, the actual \code{file} need not exist but its directory should be accessible.
 }
 \examples{
 tmp <- tempfile()

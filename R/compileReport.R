@@ -5,6 +5,8 @@
 #' @param file String containing a path to an Rmarkdown file.
 #' @param env Environment in which the R code is to be evaluated.
 #' @param skip.chunks Character vector of the names of Rmarkdown chunks to skip.
+#' @param contents List or character vector containing the contents of \code{file}.
+#' Note that \code{file} must still be supplied, see Details.
 #'
 #' @return Code chunks from \code{file} are compiled, typically populating \code{env} with new variables.
 #' \code{NULL} is invisibly returned.
@@ -20,6 +22,7 @@
 #'
 #' \code{compileReport} automatically changes the working directory to that of \code{file}.
 #' This is consistent with the behavior of \pkg{knitr} and ensures that any relative paths in \code{file} are respected.
+#' If \code{contents} is supplied, the actual \code{file} need not exist but its directory should be accessible.
 #'
 #' @seealso
 #' \code{\link{processInputCommands}}, to define the input objects in the Rmarkdown file.
@@ -45,8 +48,12 @@
 #'
 #' @export
 #' @importFrom grDevices pdf dev.off dev.list
-compileReport <- function(file, env, skip.chunks=NULL) {
-    lines <- readLines(file)
+compileReport <- function(file, env, skip.chunks=NULL, contents=NULL) {
+    if (is.null(contents)) {
+        lines <- readLines(file)
+    } else {
+        lines <- unlist(strsplit(unlist(contents), "\n"))
+    }
     chunks <- extractChunks(lines)
     chunk.names <- names(chunks)
 
